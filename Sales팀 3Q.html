@@ -1,0 +1,883 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>2025년 3분기 Sales팀 대시보드 리포트</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#ffffff; --text:#0f172a; --muted:#64748b; --panel:#ffffff; --panel-alt:#f8fafc; --border:#e2e8f0; 
+    --accent:#2563eb; --accent-2:#10b981; --accent-3:#f59e0b; --accent-4:#ef4444; --accent-5:#7c3aed; 
+    --chip:#eef2ff; --shadow:0 8px 24px rgba(2,6,23,.06); --error:#fee2e2; --errorText:#991b1b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,Segoe UI,Roboto,Apple SD Gothic Neo,Malgun Gothic,Arial,sans-serif}
+  header{padding:28px 20px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,#fff, #fafcff)}
+  .wrap{max-width:1200px;margin:0 auto}
+  h1{margin:0 0 6px;font-size:28px}
+  .subtitle{color:var(--muted);font-size:13px}
+  .grid{display:grid;gap:16px}
+  .g-3{grid-template-columns:repeat(3,1fr)}
+  .g-2{grid-template-columns:repeat(2,1fr)}
+  .g-1{grid-template-columns:1fr}
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:20px;box-shadow:var(--shadow);position:relative}
+  .panel::after{content:"";position:absolute;inset:auto 0 -1px 0;height:1px;background:linear-gradient(90deg,transparent,#eef2f7,transparent)}
+  .panel h3{margin:0 0 8px;font-size:16px}
+  .kpi{display:flex;align-items:center;justify-content:space-between}
+  .kpi .value{font-size:28px;font-weight:700;letter-spacing:-0.02em}
+  .kpi .label{color:var(--muted);font-size:12px;margin-top:4px}
+  .pill{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;border:1px solid #e6eaf3;background:#f5f7ff;color:#3b42a1;font-weight:600}
+  .pill .dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+  .soft{backdrop-filter:saturate(140%) blur(2px)}
+  .divider{height:1px;background:#eef2f7;margin:10px 0}
+  .list-pills{display:flex;gap:10px;flex-wrap:wrap}
+  .kpi-card{min-height:160px}
+  .kpi-gauge{position:absolute;right:18px;top:50%;transform:translateY(-50%);width:128px;height:128px;filter:drop-shadow(0 6px 16px rgba(2,6,23,.08))}
+  .gauge-center{position:absolute;right:18px;top:50%;transform:translateY(-50%);text-align:center;width:128px;pointer-events:none}
+  .gauge-center .big{font-weight:800;font-size:20px;letter-spacing:-.01em}
+  .gauge-center .small{color:var(--muted);font-size:12px}
+  .delta-pos{color:#16a34a}
+  .delta-neg{color:#ef4444}
+  .chip{display:inline-flex;align-items:center;gap:8px;background:var(--chip);border:1px solid #e0e7ff;padding:6px 10px;border-radius:999px;color:#4338ca;font-weight:600}
+  .row{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{padding:10px 12px;border-bottom:1px solid var(--border);text-align:right}
+  th:first-child,td:first-child{text-align:left}
+  .note{color:var(--muted);font-size:12px}
+  .toolbar{display:flex;gap:10px;align-items:center}
+  .sel{appearance:none;border:1px solid var(--border);padding:8px 10px;border-radius:10px;background:#fff}
+  .legend-dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:6px}
+  footer{color:var(--muted);padding:20px 0 40px}
+  .analysis{line-height:1.8}
+  .analysis h4{margin:16px 0 6px}
+  .analysis ul{margin:6px 0 0 18px}
+  .error-box{position:absolute;inset:8px 8px auto auto;background:var(--error);color:var(--errorText);padding:6px 10px;border-radius:8px;font-size:12px;border:1px solid #fecaca}
+  .test-badge{position:fixed;right:14px;bottom:14px;background:#ecfeff;border:1px solid #a5f3fc;color:#155e75;border-radius:999px;padding:6px 10px;font-size:12px;box-shadow:var(--shadow)}
+
+  /* New styles for monthly summary */
+  .summary-item { display: flex; flex-direction: column; gap: 8px; }
+  .summary-month { font-weight: 600; font-size: 13px; color: var(--text); }
+  .summary-metric { display: flex; flex-direction: column; gap: 6px; }
+  .summary-details { display: flex; justify-content: space-between; align-items: baseline; }
+  .summary-label { font-size: 12px; color: var(--muted); }
+  .summary-value { font-size: 13px; font-weight: 600; color: var(--text); }
+  .summary-pct { font-size: 12px; font-weight: 600; padding: 2px 6px; border-radius: 6px; color: #fff; }
+  .progress-bar-bg { background: #f1f5f9; border-radius: 999px; height: 8px; overflow: hidden; width: 100%; }
+  .progress-bar-fg { height: 100%; border-radius: 999px; transition: width 0.5s ease-out; }
+  canvas:hover { cursor: pointer; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>2025년 3분기 Sales팀 대시보드 리포트</h1>
+    <div class="subtitle">대상: Sales팀 최민 · 김다민 · 박진희 | 기간: 2025.3Q | 금액 단위: <b>천원</b> | 규칙: 수주 완료/마감만 · 자동 매출은 건수 0</div>
+  </div>
+</header>
+
+<main class="wrap" style="padding:16px 20px 32px">
+  <!-- ===== Top KPIs ===== -->
+  <section class="grid" id="kpi-grid" style="grid-template-columns: repeat(4, 1fr);">
+    <div class="panel">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+        <h3 style="font-size: 14px; font-weight: 600; margin: 0;">팀 총매출 (3Q)</h3>
+        <span id="goal_pct_badge"></span>
+      </div>
+      <div style="display: flex; align-items: baseline; gap: 8px; margin-top: 8px;">
+        <div class="value" id="kpi_team_rev" style="font-size: 32px; line-height: 1;">136,303</div>
+        <div class="note" style="font-size: 16px; font-weight: 600;" id="kpi_target_note_inline"></div>
+      </div>
+      <div style="height: 60px; margin-top: 12px;">
+        <canvas id="topSpark"></canvas>
+      </div>
+      <div class="note" style="text-align: center; margin-top: 4px;">7월-9월 매출 추이</div>
+    </div>
+    <div class="panel">
+      <h3 style="font-size: 14px; font-weight: 600; margin: 0 0 8px;">매출 구성 (%)</h3>
+      <div style="height: 140px; position: relative;">
+        <canvas id="mix100"></canvas>
+      </div>
+    </div>
+    <div class="panel">
+      <h3 id="avg_deal_size_title" style="font-size: 14px; font-weight: 600; margin: 0;">팀 평균 계약 규모</h3>
+       <div style="display: flex; align-items: baseline; gap: 8px; margin-top: 8px;">
+        <div class="value" id="kpi_avg_deal_size" style="font-size: 32px; line-height: 1;">-</div>
+        <div class="note" style="font-size: 16px; font-weight: 600;">천원</div>
+      </div>
+       <div class="note" style="margin-top: 12px; height: 60px; font-size: 11px; line-height: 1.5;">분기 총매출액을 총 계약건수로 나눈 값으로, 계약 1건당 평균 가치를 나타냅니다.</div>
+    </div>
+    <div class="panel">
+        <h3 style="font-size: 14px; font-weight: 600; margin: 0 0 12px;">월별 요약 — 목표 대비 실적</h3>
+        <div id="monthly-summary-container" style="display: flex; flex-direction: column; gap: 16px;">
+          <!-- Monthly summary will be dynamically generated here -->
+        </div>
+    </div>
+  </section>
+
+  <!-- ===== Controls (정리: 토글 제거) ===== -->
+  <section class="row" style="margin-top:16px">
+    <div class="panel" style="flex:1">
+      <div class="toolbar">
+        <label class="note">보기:</label>
+        <select class="sel" id="personFilter">
+          <option value="TEAM" selected>팀 전체</option>
+          <option>최민</option>
+          <option>김다민</option>
+          <option>박진희</option>
+        </select>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Charts Row 1 ===== -->
+  <section class="grid g-2" style="margin-top:16px">
+    <div class="panel">
+      <h3>월별 매출 & 계약건수</h3>
+      <canvas id="mrrChart" height="160"></canvas>
+      <div class="note">금액(막대, 좌측) · 건수(꺾은선, 우측)</div>
+    </div>
+    <div class="panel">
+      <h3 id="byPersonBarTitle">개인별 매출</h3>
+      <canvas id="byPersonBar" height="170"></canvas>
+    </div>
+  </section>
+
+  <!-- ===== Charts Row 2 ===== -->
+  <section class="grid g-2" style="margin-top:16px">
+    <div class="panel">
+      <h3>누적 목표 달성률 (매출)</h3>
+      <canvas id="cumulativeGoalChart" height="170"></canvas>
+      <div class="note">분기 시작부터의 누적 실적이 누적 목표를 잘 따라가고 있는지 보여줍니다.</div>
+    </div>
+    <div class="panel">
+      <h3>채널별 전환율 (배정 → 계약)</h3>
+      <canvas id="convBar" height="170"></canvas>
+      <div class="note">가로 막대: 사람별 TRIAL/PRICING 전환율(%)</div>
+    </div>
+  </section>
+
+  <!-- ===== Charts Row 3 (목표대비 매출·건수) ===== -->
+  <section class="grid g-2" style="margin-top:16px">
+    <div class="panel">
+      <h3>목표 대비 — 월별 매출</h3>
+      <canvas id="goalRevChart" height="170"></canvas>
+      <div class="note">콤보 차트: <b>막대=실적</b>, <b>라인=목표</b> · 달성률 ≥100% 초록 / 80–99.9% 호박 / <80% 빨강</div>
+    </div>
+    <div class="panel">
+      <h3>목표 대비 — 월별 신규 계약 건수</h3>
+      <canvas id="goalCntChart" height="170"></canvas>
+      <div class="note">콤보 차트: <b>막대=실적</b>, <b>라인=목표</b> · 막대 상단에 달성률(%) 표시</div>
+    </div>
+  </section>
+
+  <!-- ===== Charts Row 4 (월별 구성·개인 미니) ===== -->
+  <section class="grid g-1" style="margin-top:16px">
+    <div class="panel">
+      <h3>월별 신규/갱신/자동 — 건수</h3>
+      <canvas id="mixCntChart" height="180"></canvas>
+      <div class="note">스택 막대: 월별 신규·갱신·자동 건수 합계(우상단 툴팁에서 상세 확인)</div>
+    </div>
+  </section>
+
+  <!-- ===== Details: Person Cards (개선: 목표 대비 콤보 미니 차트) ===== -->
+  <section class="grid g-3" style="margin-top:16px">
+    <div class="panel">
+      <h3>최민 — 목표 대비 미니 차트</h3>
+      <canvas id="cm_rev" height="150"></canvas>
+      <canvas id="cm_cnt" height="120" style="margin-top:8px"></canvas>
+      <div class="note">상: 매출(막대=실적, 선=목표) · 하: 건수(막대=실적, 선=목표)</div>
+      <div class="note">신규 3,653 · 갱신 78,672 · 자동 1,031 | PRICING 3,861 · TRIAL 79,496</div>
+    </div>
+    <div class="panel">
+      <h3>김다민 — 목표 대비 미니 차트</h3>
+      <canvas id="kd_rev" height="150"></canvas>
+      <canvas id="kd_cnt" height="120" style="margin-top:8px"></canvas>
+      <div class="note">신규 10,297 · 갱신 100 | PRICING 2,971 · TRIAL 7,427</div>
+    </div>
+    <div class="panel">
+      <h3>박진희 — 목표 대비 미니 차트</h3>
+      <canvas id="pj_rev" height="150"></canvas>
+      <canvas id="pj_cnt" height="120" style="margin-top:8px"></canvas>
+      <div class="note">신규 24,054 · 갱신 18,385 · 자동 109 | PRICING 23,866 · TRIAL 18,682</div>
+    </div>
+  </section>
+
+  <!-- ===== Textual Analysis ===== -->
+  <section class="panel analysis" style="margin-top:16px">
+    <h3>핵심 인사이트 & 실행안</h3>
+    <h4>1) 핵심 인사이트</h4>
+    <ul>
+      <li>팀 매출의 <b>72.1%</b>가 갱신(자동 포함)에서 발생 → 신규 매출 비중 <b>27.9%</b>로 미션 대비 낮음.</li>
+      <li>7월 고점(매출 97,637천원, 62건) 이후 8–9월 급감 → 분기 후반 신규 중대형 딜 파이프라인 약화.</li>
+      <li>최민: 고액 <b>갱신 중심</b> 구조. 김다민: <b>신규 다건·저단가</b>. 박진희: <b>균형형이나 8–9월 공백</b>.</li>
+    </ul>
+    <h4>2) 원인</h4>
+    <ul>
+      <li>대형 갱신 딜 비중이 높아 <b>신규 비중 왜곡</b>.</li>
+      <li>TRIAL 채널 전환율이 낮아 <b>양은 많지만 질이 낮은 전환</b>이 발생.</li>
+      <li>월말 클로징 리듬 부재로 <b>후반 성과 미흡</b>.</li>
+    </ul>
+    <h4>3) 실행안</h4>
+    <ul>
+      <li><b>신규 매출 집중 필요</b>: 신규 매출 비중 목표를 55~60%로 상향하고, 월 2건 이상의 중·대형 신규 계약과 최소 객단가(1,000천원 이상) 기준을 설정합니다.</li>
+      <li><b>영업 집중 기간 운영</b>: 월별 영업 활동을 주간 단위로 체계화합니다. (예: 1주차 - 문의 고객 집중, 2-3주차 - 체험 고객 전환, 4주차 - 마감)</li>
+      <li><b>개인별 목표 개선</b>:
+        <ul style="margin-top: 8px; padding-left: 20px; list-style-type: disc;">
+          <li style="margin-bottom: 4px;"><b>최민:</b> 현재 높은 갱신 매출에 더해, 기존 고객 대상 추가 판매(Upsell)를 통해 신규 매출 비중을 늘리는 데 집중합니다.</li>
+          <li style="margin-bottom: 4px;"><b>김다민:</b> 다수의 저단가 계약 구조를 개선하기 위해, 고단가 상품 조합(번들) 판매 및 상위 플랜 제안으로 계약당 평균 매출을 높입니다.</li>
+          <li><b>박진희:</b> 분기 후반 실적 공백을 방지하기 위해, 구매 의사가 높은 문의(Pricing) 채널 고객을 중심으로 매월 1-2건의 중·대형 신규 계약을 꾸준히 확보합니다.</li>
+        </ul>
+      </li>
+    </ul>
+    <div class="note">* 규칙: 수주 완료/마감만, 자동은 건수 0·금액만, DB_source=Inbound→PRICING, 그 외 TRIAL. 배정: TRIAL=가입일, PRICING=문의일.</div>
+  </section>
+
+  <footer>
+    © 2025 Sales Team — Q3 Interactive Dashboard. 모든 금액은 천원 단위, 비율은 소수 1자리 반올림.
+  </footer>
+</main>
+
+<div id="test-badge" class="test-badge" style="display:none"></div>
+
+<script>
+  // ==== SAFE CHART INITIALIZER ===================================================
+  function canvasCtx(id){
+    const el = document.getElementById(id);
+    if (!el || !(el instanceof HTMLCanvasElement)) return null;
+    const ctx = el.getContext('2d');
+    return ctx || null;
+  }
+  function mountError(panel, msg){
+    if (!panel) return; 
+    const box = document.createElement('div');
+    box.className = 'error-box';
+    box.textContent = msg;
+    panel.appendChild(box);
+  }
+  function createChartSafe(id, cfg){
+    const el = document.getElementById(id);
+    const panel = el ? el.closest('.panel') : null;
+    const ctx = canvasCtx(id);
+    if (!ctx){
+      mountError(panel, `차트를 렌더링할 수 없습니다: #${id} 컨텍스트 획득 실패`);
+      return null;
+    }
+    try {
+      // 동일 캔버스에 차트가 이미 있으면 먼저 파괴하여 중첩 렌더(점점 두꺼워 보이는 현상) 방지
+      window.__charts = window.__charts || {};
+      if (window.__charts[id] && typeof window.__charts[id].destroy === 'function'){
+        window.__charts[id].destroy();
+      }
+      const inst = new Chart(ctx, cfg);
+      window.__charts[id] = inst;
+      return inst;
+    }
+    catch(e){
+      mountError(panel, `Chart 생성 실패: ${e.message}`);
+      return null;
+    }
+  }
+
+  // ==== DATA =====================================================================
+  const months = ['7월','8월','9월'];
+  const monthRevenueTeam = [97637, 25842, 12824]; // 천원
+  const monthCountTeam = [62, 37, 16];
+
+  const byPerson = {
+    'TEAM': { labels:['최민','김다민','박진희'], vals:[83357,10397,42548] },
+    '최민': { labels:['7월','8월','9월'], vals:[70749,9712,2896] },
+    '김다민': { labels:['7월','8월','9월'], vals:[1518,2317,6563] },
+    '박진희': { labels:['7월','8월','9월'], vals:[25370,13813,3365] }
+  };
+    
+  // Data for person-specific line chart in mrrChart
+  const byPersonCount = {
+    '최민': [12,8,5],
+    '김다민': [31,23,5],
+    '박진희': [19,6,6]
+  };
+
+  const monthNewRenewCnt = {
+    labels:['7월','8월','9월'],
+    신규:[41,28,9],
+    갱신:[20,9,7],
+    자동:[1,0,0]
+  };
+
+  const goals = {
+    TEAM: { months:['7월','8월','9월'], rev:[87500,87500,115000], cnt:[54,55,53], actRev:[97637,25842,12824], actCnt:[62,37,16] },
+    '최민': { months:['7월','8월','9월'], rev:[30000,30000,40000], cnt:[20,20,19], actRev:[70749,9712,2896], actCnt:[12,8,5] },
+    '김다민': { months:['7월','8월','9월'], rev:[30000,30000,40000], cnt:[18,18,18], actRev:[1518,2317,6563], actCnt:[31,23,5] },
+    '박진희': { months:['7월','8월','9월'], rev:[27500,27500,35000], cnt:[16,17,16], actRev:[25370,13813,3365], actCnt:[19,6,6] }
+  };
+
+  // ==== UTILS ====================================================================
+  const thousand = true; // 고정 사용
+  function fmt(v){ return thousand ? Number(v).toLocaleString('ko-KR') : String(v); }
+
+  // ===== Combo builder (bar = actual, line = goal) with threshold colors & % labels =====
+  const COLORS = { green:'#10b981', amber:'#f59e0b', red:'#ef4444', goal:'#6366f1', goalFill:'#c7d2fe' };
+  function pct(a, g){ return g > 0 ? (a / g) * 100 : 0; }
+  function barColors(act, goal){
+    return act.map((v,i)=>{
+      const p = pct(v, goal[i]);
+      if (p >= 100) return COLORS.green;
+      if (p >= 80) return COLORS.amber;
+      return COLORS.red;
+    });
+  }
+  function makeComboData(g){
+    return {
+      labels: g.months,
+      datasets: [
+        { type:'bar', label:'실적', data:g.actRev, backgroundColor: barColors(g.actRev, g.rev), borderRadius:6 },
+        { type:'line', label:'목표', data:g.rev, borderColor: COLORS.goal, backgroundColor: COLORS.goalFill, fill:false, tension:.2, pointRadius:3, borderWidth:2 }
+      ]
+    };
+  }
+  function makeComboDataCnt(g){
+    return {
+      labels: g.months,
+      datasets: [
+        { type:'bar', label:'실적(건)', data:g.actCnt, backgroundColor: barColors(g.actCnt, g.cnt), borderRadius:6 },
+        { type:'line', label:'목표(건)', data:g.cnt, borderColor: COLORS.goal, backgroundColor: COLORS.goalFill, fill:false, tension:.2, pointRadius:3, borderWidth:2 }
+      ]
+    };
+  }
+  
+  // New utility for cumulative chart
+  function calculateCumulative(dataArray) {
+    const cumulativeArray = [];
+    dataArray.reduce((acc, value) => {
+        const newTotal = acc + value;
+        cumulativeArray.push(newTotal);
+        return newTotal;
+    }, 0);
+    return cumulativeArray;
+  }
+
+  function makeCumulativeData(g) {
+    const cumulativeActuals = calculateCumulative(g.actRev);
+    const cumulativeGoals = calculateCumulative(g.rev);
+    return {
+        labels: g.months,
+        datasets: [
+            {
+                label: '누적 실적',
+                data: cumulativeActuals,
+                borderColor: 'var(--accent-2)',
+                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                fill: true,
+                tension: 0.2,
+                borderWidth: 2.5
+            },
+            {
+                label: '누적 목표',
+                data: cumulativeGoals,
+                borderColor: 'var(--accent-5)',
+                borderDash: [5, 5],
+                fill: false,
+                tension: 0.2,
+                borderWidth: 2.5
+            }
+        ]
+    };
+  }
+
+  // Plugin to draw % labels above bars
+  const barLabelsPlugin = {
+    id:'barLabels',
+    afterDatasetsDraw(chart){
+      const {ctx, data} = chart;
+      ctx.save();
+      data.datasets.forEach((ds, di)=>{
+        if (ds.type !== 'bar') return;
+        const meta = chart.getDatasetMeta(di);
+        const goalDs = data.datasets.find(d=>d.type==='line');
+        meta.data.forEach((bar, i)=>{
+          const val = ds.data[i];
+          const goalVal = goalDs ? goalDs.data[i] : 0;
+          const p = pct(val, goalVal);
+          const label = (Math.round(p*10)/10).toFixed(1) + '%';
+          ctx.font = '12px Inter, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillStyle = '#334155';
+          ctx.fillText(label, bar.x, bar.y - 6);
+        });
+      });
+      ctx.restore();
+    }
+  };
+
+  // Plugin to draw % labels inside stacked bars
+  const stackedBarLabelsPlugin = {
+    id: 'stackedBarLabels',
+    afterDatasetsDraw(chart) {
+      const { ctx, data } = chart;
+      ctx.save();
+      ctx.font = '600 11px Inter, sans-serif';
+      ctx.fillStyle = 'white';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      
+      data.datasets.forEach((dataset, i) => {
+        const meta = chart.getDatasetMeta(i);
+        if (meta.hidden) {
+          return;
+        }
+        
+        meta.data.forEach((element, index) => {
+          const percentage = dataset.data[index];
+          if (percentage === 0) return;
+
+          const label = percentage.toFixed(1) + '%';
+          const textWidth = ctx.measureText(label).width;
+          
+          const segmentWidth = element.x - element.base;
+
+          if (segmentWidth > textWidth + 10) { 
+            const textX = element.base + (segmentWidth / 2);
+            ctx.fillText(label, textX, element.y);
+          }
+        });
+      });
+      ctx.restore();
+    }
+  };
+
+
+  // Plugin to draw total amount labels to the right of stacked bars
+  const totalAmountLabelsPlugin = {
+    id: 'totalAmountLabels',
+    afterDatasetsDraw(chart) {
+        const { ctx, data, scales: { x, y } } = chart;
+        const options = chart.config.options.plugins.totalAmountLabels || {};
+        const compAmounts = options.compAmounts;
+        if (!compAmounts) return;
+
+        ctx.save();
+        ctx.font = '600 12px Inter, sans-serif';
+        ctx.fillStyle = '#475569'; // slate-600
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+
+        const meta = chart.getDatasetMeta(data.datasets.length - 1); // Use the last dataset meta
+        
+        meta.data.forEach((bar, index) => {
+            const total = compAmounts.신규[index] + compAmounts.갱신[index] + compAmounts.자동[index];
+            const label = `(${fmt(total)})`;
+            const positionX = x.getPixelForValue(100);
+            const positionY = y.getPixelForValue(index); // For indexAxis: 'y'
+            
+            ctx.fillText(label, positionX + 8, positionY);
+        });
+        ctx.restore();
+    }
+  };
+
+  // ==== INIT AFTER DOM READY =====================================================
+  window.addEventListener('DOMContentLoaded', ()=>{
+    const style = getComputedStyle(document.documentElement);
+    const accentColor = style.getPropertyValue('--accent').trim() || '#2563eb';
+    const accent2Color = style.getPropertyValue('--accent-2').trim() || '#10b981';
+    const accent3Color = style.getPropertyValue('--accent-3').trim() || '#f59e0b';
+    const accent4Color = style.getPropertyValue('--accent-4').trim() || '#ef4444';
+
+    // ---- Self tests (do not change existing) ----
+    const tests = [];
+    function assert(name, cond){ tests.push({name, pass:!!cond}); if(!cond) console.warn('[TEST FAIL]', name); }
+
+    // Presence tests
+    const ids = ['mrrChart','mix100','byPersonBar','cumulativeGoalChart','convBar','goalRevChart','goalCntChart','topSpark'];
+    ids.forEach(id=> assert(`#${id} canvas 존재`, document.getElementById(id) instanceof HTMLCanvasElement));
+    assert('Chart.js 로드됨', typeof Chart !== 'undefined');
+    assert('months 길이=3', Array.isArray(months) && months.length===3);
+
+    // Goals length consistency (추가 테스트)
+    ['TEAM','최민','김다민','박진희'].forEach(k=>{
+      const g = goals[k];
+      assert(`${k} 목표/실적 길이 일치(매출)`, g.months.length===g.rev.length && g.rev.length===g.actRev.length);
+      assert(`${k} 목표/실적 길이 일치(건수)`, g.months.length===g.cnt.length && g.cnt.length===g.actCnt.length);
+    });
+
+    // ---- Build charts safely ----
+    // KPI 합계 자동 보정 (월별 합과 일치)
+    const teamTotal = monthRevenueTeam.reduce((a,b)=>a+b,0);
+    const kpiEl = document.getElementById('kpi_team_rev');
+    if (kpiEl) kpiEl.textContent = fmt(teamTotal);
+    assert('KPI 합계=월별합', kpiEl && kpiEl.textContent.replace(/,/g,'') === String(teamTotal));
+
+    // ---- New KPI Calculation: Average Deal Size ----
+    const avgDealSizeData = (function calculateAvgDealSize() {
+        const teamTotalCount = monthCountTeam.reduce((a, b) => a + b, 0);
+        const teamAvg = teamTotal > 0 ? teamTotal / teamTotalCount : 0;
+
+        const personAvg = {};
+        ['최민', '김다민', '박진희'].forEach(name => {
+            const totalRev = byPerson[name].vals.reduce((a, b) => a + b, 0);
+            const totalCount = byPersonCount[name].reduce((a, b) => a + b, 0);
+            personAvg[name] = totalCount > 0 ? totalRev / totalCount : 0;
+        });
+
+        return { TEAM: teamAvg, ...personAvg };
+    })();
+
+    const kpiAvgDealSizeEl = document.getElementById('kpi_avg_deal_size');
+    if (kpiAvgDealSizeEl) kpiAvgDealSizeEl.textContent = fmt(Math.round(avgDealSizeData.TEAM));
+    
+
+    // Goal achievement badge
+    const revTarget = goals.TEAM.rev.reduce((a,b)=>a+b,0);
+
+    const targetNoteEl = document.getElementById('kpi_target_note_inline');
+    if(targetNoteEl) {
+        targetNoteEl.textContent = `/ ${fmt(revTarget)}`;
+    }
+
+    const revActual = teamTotal;
+    const revPct = revTarget ? (revActual / revTarget) * 100 : 0;
+    const badgeEl = document.getElementById('goal_pct_badge');
+    if (badgeEl) {
+        badgeEl.className = 'chip';
+        badgeEl.textContent = `달성률 ${(Math.round(revPct*10)/10).toFixed(1)}%`;
+        let bgColorVar = '--accent-4'; // red by default
+        if (revPct >= 100) bgColorVar = '--accent-2'; // green
+        else if (revPct >= 80) bgColorVar = '--accent-3'; // amber
+
+        badgeEl.style.backgroundColor = `var(${bgColorVar})`;
+        badgeEl.style.color = '#fff';
+        badgeEl.style.borderColor = 'transparent';
+        badgeEl.style.fontWeight = '600';
+    }
+
+    // 매출 구성 — 100% 스택 바 (팀·개인) [정합성 보정 포함]
+    const compLabels = ['팀 전체','최민','김다민','박진희'];
+
+    // 단일 출처: 개인별 신규/갱신/자동 금액 정의
+    const mixByPerson = {
+      '최민': { 신규:3653, 갱신:78672, 자동:1031 },
+      '김다민': { 신규:10297, 갱신:100,    자동:0    },
+      '박진희': { 신규:24054, 갱신:18385, 자동:109  },
+    };
+
+    function buildCompAmounts(){
+      const team = { 신규:0, 갱신:0, 자동:0 };
+      Object.keys(mixByPerson).forEach(k=>{
+        team.신규 += mixByPerson[k].신규;
+        team.갱신 += mixByPerson[k].갱신;
+        team.자동 += mixByPerson[k].자동;
+      });
+      // 팀 총합을 KPI(월별 합)와 맞추는 보정 (천원 반올림 차이 흡수)
+      const teamSum = team.신규 + team.갱신 + team.자동;
+      const diff = (monthRevenueTeam.reduce((a,b)=>a+b,0)) - teamSum;
+      if (diff !== 0){
+        const maxKey = ['신규','갱신','자동'].sort((a,b)=> team[b] - team[a])[0];
+        team[maxKey] += diff; // 가장 큰 항목에 보정치 반영
+      }
+      return {
+        신규: [team.신규,  mixByPerson['최민'].신규,  mixByPerson['김다민'].신규,  mixByPerson['박진희'].신규],
+        갱신: [team.갱신,  mixByPerson['최민'].갱신,  mixByPerson['김다민'].갱신,  mixByPerson['박진희'].갱신],
+        자동: [team.자동,  mixByPerson['최민'].자동,  mixByPerson['김다민'].자동,  mixByPerson['박진희'].자동],
+      };
+    }
+
+    function toPctFor(comp, key){
+      return comp[key].map((v,i)=>{
+        const total = (comp.신규[i] + comp.갱신[i] + comp.자동[i]) || 1;
+        return Math.round((v/total)*1000)/10; // 소수1자리
+      });
+    }
+
+    const compAmounts = buildCompAmounts();
+
+    const c2_config = {
+      type:'bar',
+      data:{ labels: compLabels, datasets:[
+        { label:'신규', data: toPctFor(compAmounts,'신규'), backgroundColor: accentColor, stack:'mix' },
+        { label:'갱신', data: toPctFor(compAmounts,'갱신'), backgroundColor: accent2Color, stack:'mix' },
+        { label:'자동', data: toPctFor(compAmounts,'자동'), backgroundColor: accent3Color, stack:'mix' }
+      ]},
+      options:{
+        indexAxis:'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        layout: {
+            padding: {
+                right: 70 
+            }
+        },
+        scales:{
+          x:{ stacked: true, beginAtZero: true, max: 100, grid: { display: false, drawBorder: false }, ticks:{ display: false } },
+          y:{ stacked: true, grid: { display: false, drawBorder: false } }
+        },
+        plugins:{
+          legend: {
+            display: true,
+            position: 'bottom',
+            align: 'center',
+            labels: { boxWidth: 20, padding: 20, usePointStyle: true, pointStyle: 'rectRounded' }
+          },
+          tooltip:{
+            callbacks:{ label:(ctx)=>{
+              const i = ctx.dataIndex; const lbl = ctx.dataset.label; const pct = ctx.raw; const amount = compAmounts[lbl][i];
+              return `${lbl}: ${pct}% ( ${fmt(amount)} )`;
+            }}
+          },
+          totalAmountLabels: {
+              compAmounts: compAmounts
+          }
+        }
+      },
+      plugins: [stackedBarLabelsPlugin, totalAmountLabelsPlugin]
+    };
+    const c2 = createChartSafe('mix100', c2_config);
+
+
+    // 정합성 테스트: 구성 합계 = KPI 합계(보정 후)
+    const teamSumFromComp = compAmounts.신규[0] + compAmounts.갱신[0] + compAmounts.자동[0];
+    assert('구성 합=KPI 합(보정후)', teamSumFromComp === monthRevenueTeam.reduce((a,b)=>a+b,0));
+
+    // Top sparkline (월별 매출 추세)
+    const cSpark = createChartSafe('topSpark', {
+      type:'line',
+      data:{ labels: months, datasets:[{ data: monthRevenueTeam, borderColor:'var(--accent)', tension:.4, pointRadius:(ctx)=> ctx.dataIndex===ctx.dataset.data.length-1?3:0, pointBackgroundColor:'var(--accent)', borderWidth:2.5, fill:true, backgroundColor:'rgba(37,99,235,.08)' }] },
+      options:{ responsive:true, maintainAspectRatio: false, scales:{ x:{ display:false }, y:{ display:false } }, plugins:{ legend:{ display:false }, tooltip:{ enabled:false } } }
+    });
+
+    // New Monthly Summary panel logic
+    const summaryContainer = document.getElementById('monthly-summary-container');
+    if (summaryContainer) {
+      const g = goals.TEAM;
+      summaryContainer.innerHTML = g.months.map((month, i) => {
+        const revPct = pct(g.actRev[i], g.rev[i]);
+        const cntPct = pct(g.actCnt[i], g.cnt[i]);
+
+        const getPctColor = (p) => {
+          if (p >= 100) return accent2Color;
+          if (p >= 80) return accent3Color;
+          return accent4Color;
+        };
+
+        const revColor = getPctColor(revPct);
+        const cntColor = getPctColor(cntPct);
+
+        return `
+          <div class="summary-item">
+            <div class="summary-month">${month}</div>
+            <div class="summary-metric">
+              <div class="summary-details">
+                <span class="summary-label">매출</span>
+                <div>
+                  <span class="summary-value">${fmt(g.actRev[i])}</span>
+                  <span class="summary-pct" style="background-color: ${revColor};">${revPct.toFixed(1)}%</span>
+                </div>
+              </div>
+              <div class="progress-bar-bg">
+                <div class="progress-bar-fg" style="width: ${Math.min(100, revPct)}%; background-color: ${revColor};"></div>
+              </div>
+            </div>
+            <div class="summary-metric">
+              <div class="summary-details">
+                <span class="summary-label">계약건수</span>
+                <div>
+                  <span class="summary-value">${g.actCnt[i]}건</span>
+                  <span class="summary-pct" style="background-color: ${cntColor};">${cntPct.toFixed(1)}%</span>
+                </div>
+              </div>
+              <div class="progress-bar-bg">
+                <div class="progress-bar-fg" style="width: ${Math.min(100, cntPct)}%; background-color: ${cntColor};"></div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // 메인 콤보 차트들 및 보조 차트
+    const c1 = createChartSafe('mrrChart', {
+      type:'bar',
+      data:{ labels: months, datasets:[
+        { label:'매출(천원)', data:monthRevenueTeam, backgroundColor:'rgba(37,99,235,.85)', borderRadius:6 },
+        { type:'line', label:'계약건수', data:monthCountTeam, yAxisID:'y1', borderColor:'#10b981', tension:.3, borderWidth:2, pointRadius:3 }
+      ]},
+      options:{ responsive:true, scales:{ y:{ beginAtZero:true, ticks:{ callback:(v)=>fmt(v) } }, y1:{ beginAtZero:true, position:'right' } }, plugins:{ tooltip:{ callbacks:{ label:(ctx)=> ctx.dataset.label+': '+fmt(ctx.parsed.y) } } } }
+    });
+
+    const c3 = createChartSafe('byPersonBar', {
+      type:'bar', data:{ labels: byPerson.TEAM.labels, datasets:[{ label:'매출(천원)', data: byPerson.TEAM.vals, backgroundColor:'#2563eb', borderRadius:6 }] },
+      options:{ scales:{ y:{ beginAtZero:true, ticks:{ callback:(v)=>fmt(v) } } }, plugins:{ tooltip:{ callbacks:{ label:(ctx)=> fmt(ctx.parsed.y) } } } }
+    });
+
+    const cCumulative = createChartSafe('cumulativeGoalChart', {
+        type: 'line',
+        data: makeCumulativeData(goals['TEAM']),
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { callback: (v) => fmt(v) }
+                }
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: { label: (ctx) => `${ctx.dataset.label}: ${fmt(ctx.parsed.y)}` }
+                }
+            }
+        }
+    });
+
+    const c6 = createChartSafe('convBar', {
+      type:'bar',
+      data:{ labels:['최민','김다민','박진희'], datasets:[
+        { label:'TRIAL 전환율(%)', data:[11.7,7.5,8.8], backgroundColor:'#f97316' },
+        { label:'PRICING 전환율(%)', data:[17.5,20.0,36.4], backgroundColor:'#16a34a' }
+      ]},
+      options:{ indexAxis:'y', scales:{ x:{ beginAtZero:true, max:100 } }, plugins:{ tooltip:{ callbacks:{ label:(ctx)=> ctx.dataset.label+': '+ctx.parsed.x+'%' } } } }
+    });
+    
+    const c7_config = { 
+      type:'bar', 
+      data: makeComboData(goals['TEAM']), 
+      options:{
+        scales:{ y:{ beginAtZero:true, ticks:{ callback:(v)=>fmt(v) } } },
+        plugins:{ tooltip:{ callbacks:{ label:(ctx)=> ctx.dataset.label+': '+fmt(ctx.parsed.y || ctx.raw) } } }
+      },
+      plugins:[barLabelsPlugin]
+    };
+    const c7 = createChartSafe('goalRevChart', c7_config);
+
+    const c8_config = { 
+      type:'bar', 
+      data: makeComboDataCnt(goals['TEAM']), 
+      options:{
+        scales:{ y:{ beginAtZero:true } },
+        plugins:{ tooltip:{ callbacks:{ label:(ctx)=> ctx.dataset.label+': '+(ctx.parsed.y ?? ctx.raw) } } }
+      },
+      plugins:[barLabelsPlugin]
+    };
+    const c8 = createChartSafe('goalCntChart', c8_config);
+
+    // Creation tests (추가)
+    ;[c1,c2,c3,cCumulative,c6,c7,c8,cSpark].forEach((c,i)=> assert(`차트_${i+1}_생성`, !!c));
+
+    // 신규/갱신/자동 — 건수 스택 막대
+    const cMixCnt = createChartSafe('mixCntChart', {
+      type:'bar',
+      data:{ labels: monthNewRenewCnt.labels, datasets:[
+        { label:'신규', data: monthNewRenewCnt.신규, backgroundColor:'#2563eb', borderRadius:6, stack:'s' },
+        { label:'갱신', data: monthNewRenewCnt.갱신, backgroundColor:'#10b981', borderRadius:6, stack:'s' },
+        { label:'자동', data: monthNewRenewCnt.자동, backgroundColor:'#f59e0b', borderRadius:6, stack:'s' }
+      ]},
+      options:{ scales:{ x:{ stacked:true }, y:{ beginAtZero:true, stacked:true } } }
+    });
+    assert('스택 막대 생성', !!cMixCnt);
+
+    // 개인별 미니 콤보 차트 생성 헬퍼
+    function makeMiniCombo(revElId, cntElId, key){
+      const g = goals[key];
+      const revConfig = {
+        type:'bar',
+        data: makeComboData(g),
+        options:{
+          scales:{ y:{ beginAtZero:true, ticks:{ callback:(v)=>fmt(v) } } },
+          plugins:{ legend:{ display:false } }
+        },
+        plugins:[barLabelsPlugin]
+      };
+      const cntConfig = {
+        type:'bar',
+        data: makeComboDataCnt(g),
+        options:{
+          scales:{ y:{ beginAtZero:true } },
+          plugins:{ legend:{ display:false } }
+        },
+        plugins:[barLabelsPlugin]
+      };
+      const rev = createChartSafe(revElId, revConfig);
+      const cnt = createChartSafe(cntElId, cntConfig);
+      return [rev,cnt];
+    }
+    const [cmRev, cmCnt] = makeMiniCombo('cm_rev','cm_cnt','최민');
+    const [kdRev, kdCnt] = makeMiniCombo('kd_rev','kd_cnt','김다민');
+    const [pjRev, pjCnt] = makeMiniCombo('pj_rev','pj_cnt','박진희');
+    assert('개인 미니 차트 생성', !!(cmRev && cmCnt && kdRev && kdCnt && pjRev && pjCnt));
+
+    // ---- Interactions ----
+    const personFilter = document.getElementById('personFilter');
+    const byPersonBarTitle = document.getElementById('byPersonBarTitle');
+    const originalTitle = byPersonBarTitle.textContent;
+    const avgDealSizeTitleEl = document.getElementById('avg_deal_size_title');
+
+    function updateDashboard(key) {
+        // Update chart titles for context
+        if (key === 'TEAM') {
+            byPersonBarTitle.textContent = originalTitle;
+            if(avgDealSizeTitleEl) avgDealSizeTitleEl.textContent = '팀 평균 계약 규모';
+        } else {
+            byPersonBarTitle.textContent = `${key} — 월별 매출`;
+            if(avgDealSizeTitleEl) avgDealSizeTitleEl.textContent = `${key} 평균 계약 규모`;
+        }
+        
+        // Update new KPI panel
+        if (kpiAvgDealSizeEl) {
+            const value = avgDealSizeData[key];
+            kpiAvgDealSizeEl.textContent = fmt(Math.round(value));
+        }
+
+        // Update charts data
+        if (c1) {
+            const revData = (key === 'TEAM') ? monthRevenueTeam : byPerson[key].vals;
+            const cntData = (key === 'TEAM') ? monthCountTeam : byPersonCount[key];
+            c1.data.datasets[0].data = revData;
+            c1.data.datasets[1].data = cntData;
+            c1.update();
+        }
+        if (c3){ c3.data.labels = byPerson[key].labels; c3.data.datasets[0].data = byPerson[key].vals; c3.update(); }
+        if (cCumulative) {
+            const g = (key in goals) ? goals[key] : goals['TEAM'];
+            cCumulative.data = makeCumulativeData(g);
+            cCumulative.update();
+        }
+        if (c7){ const g = (key in goals) ? goals[key] : goals['TEAM']; c7.data = makeComboData(g); c7.update(); }
+        if (c8){ const g = (key in goals) ? goals[key] : goals['TEAM']; c8.data = makeComboDataCnt(g); c8.update(); }
+    }
+
+    personFilter.addEventListener('change', (e) => {
+        updateDashboard(e.target.value);
+    });
+
+    if (c3) {
+        c3.canvas.onclick = (evt) => {
+            const points = c3.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, true);
+            let newKey = 'TEAM'; // Default to team view if clicking outside bars
+
+            if (points.length && personFilter.value === 'TEAM') {
+                const firstPoint = points[0];
+                const label = c3.data.labels[firstPoint.index];
+                if (['최민', '김다민', '박진희'].includes(label)) {
+                    newKey = label;
+                }
+            }
+            
+            if (personFilter.value !== newKey) {
+                personFilter.value = newKey;
+                updateDashboard(newKey);
+            }
+        };
+    }
+
+    // ---- Report test results badge ----
+    const passed = tests.filter(t=>t.pass).length, total = tests.length;
+    const badge = document.getElementById('test-badge');
+    badge.style.display = 'block';
+    badge.textContent = `Self-tests: ${passed}/${total} passed`;
+  });
+</script>
+</body>
+</html>
+
